@@ -18,11 +18,15 @@ if path == '--help'
   puts fancy('  ActiveRecordQueryTrace::CustomLogSubscriber.attach_to :active_record', color: 32)
   puts fancy('  ActiveRecordQueryTrace.enabled = true', color: 32)
   puts fancy('end', color: 32)
+  puts fancy('ActiveRecordQueryTrace.level = :app', color: 32)
+  puts fancy('ActiveRecordQueryTrace.lines = 5', color: 32)
   exit
 end
 
 lines = File.readlines(path)
 total_queries = 0
+queries_count_without_save_point = 0
+read_queries_count = 0
 grouped_queries = {}
 query_traces = {}
 last_query = nil
@@ -50,6 +54,8 @@ lines.each do |line|
     query_traces[last_query].push([])
 
     total_queries += 1
+    queries_count_without_save_point += 1 unless query.include?('SAVEPOINT')
+    read_queries_count += 1 if query.include?('SELECT')
 
     grouped_queries[query] = { count: 0, params: {} } unless grouped_queries.key?(query)
     grouped_queries[query][:count] += 1
@@ -92,6 +98,10 @@ end
 
 puts "\n"
 
-puts '------------------------------'
-puts "---   Total Queries: #{fancy(total_queries)}   ---"
-puts '------------------------------'
+puts '----------------------'
+puts "Total Queries:\t#{fancy(total_queries)}"
+puts '-----'
+puts "SAVEPOINTS:\t#{fancy(total_queries - queries_count_without_save_point)}"
+puts "Read Queries:\t#{fancy(read_queries_count)}"
+puts "Write Queries:\t#{fancy(queries_count_without_save_point - read_queries_count)}"
+puts '----------------------'
