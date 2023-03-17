@@ -73,15 +73,22 @@ puts '------------------------------'
 
 # Print report
 grouped_queries.sort_by { |_k, v| v[:count] }.each do |item|
-  next if item[1][:count] == 1
+  sql = item[0]
+  execution_number = item[1][:count]
+  bindings = item[1][:params]
 
-  puts "⚡SQL: #{item[0]}"
-  puts "\n  Executed: " + fancy("#{item[1][:count]} times")
+  puts "⚡SQL: #{sql}"
+  puts format(
+    "\n  Executed: %<count>s (%<percent>s of all queries)",
+    count: fancy("#{execution_number} times"),
+    percent: fancy("#{((1.0 * execution_number) / total_queries * 100).round(2)}%")
+  )
 
-  unless item[1][:params].empty?
+  unless bindings.empty?
     puts "\n  Bindings:"
-    item[1][:params].sort_by { |_k, v| v }.reverse.each do |p|
-      puts "    #{p[0]} used " + fancy("#{p[1]} times")
+    bindings.sort_by { |_k, v| v }.reverse.each do |binding_line|
+      params, count = binding_line
+      puts format('   %<params>s used %<count>s', params:, count: fancy("#{count} times"))
     end
   end
 
@@ -91,16 +98,14 @@ grouped_queries.sort_by { |_k, v| v[:count] }.each do |item|
     trace_lines = t[0].split('|')
     count = t[1]
 
-    puts '     ' + fancy("#{count} occurrences") + ' at:'
-    trace_lines.each { |trace_line| puts "  #{trace_line}" }
+    puts format('    %<count>s at:', count: fancy("#{count} occurrences"))
+    puts trace_lines
 
     puts ''
   end
 
-  puts "\n"
+  puts ''
 end
-
-puts "\n"
 
 puts '----------------------'
 puts "Total Queries:\t#{fancy(total_queries)}"
