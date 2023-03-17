@@ -75,22 +75,26 @@ puts '------------------------------'
 grouped_queries.sort_by { |_k, v| v[:count] }.each do |item|
   next if item[1][:count] == 1
 
-  puts "⚡ #{item[0]}"
-  puts 'Executed: ' + fancy("#{item[1][:count]} times")
-  puts 'Params:'
-  item[1][:params].sort_by { |_k, v| v }.reverse.each do |p|
-    puts "#{p[0]} used " + fancy("#{p[1]} times")
+  puts "⚡SQL: #{item[0]}"
+  puts "\n  Executed: " + fancy("#{item[1][:count]} times")
+
+  unless item[1][:params].empty?
+    puts "\n  Bindings:"
+    item[1][:params].sort_by { |_k, v| v }.reverse.each do |p|
+      puts "    #{p[0]} used " + fancy("#{p[1]} times")
+    end
   end
 
-  puts 'Trances:'
+  puts "\n  Occurrences in source:"
 
   query_traces[item[0]].map { |t| t.join('|') }.tally.sort_by { |_k, v| v }.reverse.each do |t|
     trace_lines = t[0].split('|')
     count = t[1]
 
-    puts '   Happened ' + fancy("#{count} times")
-    puts trace_lines
-    puts '   ---------------------------'
+    puts '     ' + fancy("#{count} occurrences") + ' at:'
+    trace_lines.each { |trace_line| puts "  #{trace_line}" }
+
+    puts ''
   end
 
   puts "\n"
